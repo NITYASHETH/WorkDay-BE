@@ -551,6 +551,31 @@ router.post("/tasks", async (req, res) => {
     });
     
     await task.save();
+
+    // Sending email to registered user
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'vrajjariwala123@gmail.com',
+        pass: 'levywymfixzbejia'
+      }
+    });
+
+    const mailOptions = {
+      from: 'vrajjariwala123@gmail.com',
+      to: assignedUser.email, // Assuming assignedUser has an 'email' field
+      subject: 'Task Assigned',
+      text: `Dear ${assignedUser.fname},\n\nA new task has been assigned to you!\n\nTask Details:\nTitle: ${title}\nDescription: ${description}\nDue Date: ${dueDate}\n\nRegards,\n WorkDay`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info){
+      if (error) {
+        console.error(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+
     res.status(201).json(task);
   } catch (error) {
     console.error(error);
@@ -1499,6 +1524,34 @@ router.put('/api/leave/:id/:status', async (req, res) => {
   }
 });
 
+router.get('/leave/totals', async (req, res) => {
+  try {
+    // Count total leave requests
+    const totalLeaveRequests = await Leave.countDocuments();
+
+    // Count leave requests with status 'pending'
+    const totalPendingLeaveRequests = await Leave.countDocuments({ status: 'pending' });
+
+    // Count leave requests with status 'approved'
+    const totalApprovedLeaveRequests = await Leave.countDocuments({ status: 'approved' });
+
+    // Count leave requests with status 'rejected'
+    const totalRejectedLeaveRequests = await Leave.countDocuments({ status: 'rejected' });
+
+    res.json({ 
+      total: totalLeaveRequests,
+      pending: totalPendingLeaveRequests,
+      approved: totalApprovedLeaveRequests,
+      rejected: totalRejectedLeaveRequests
+    });
+  } catch (error) {
+    console.error("Error fetching total leave requests:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
 
 
 // // Create Attendance Record
@@ -1637,6 +1690,41 @@ router.get('/attendance/monthlyWithFname', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
+
+// GET request to fetch attendance for a particular user for a specific month and year
+router.get('/attendance/user', async (req, res) => {
+  try {
+    const { userId, month, year } = req.query;
+
+    // Validate request parameters
+    if (!userId || !month || !year) {
+      return res.status(400).json({ message: 'Missing parameters' });
+    }
+
+    // Calculate start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Fetch user data
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Fetch attendance data for the specified user and month
+    const attendanceData = await Attendance.find({
+      user_id: userId,
+      date: { $gte: startDate, $lte: endDate }
+    });
+
+    res.json({ success: true, user, attendanceData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
 
 // //create salary
 
