@@ -74,7 +74,7 @@ router.post("/register", async (req, res) => {
       from: 'vrajjariwala123@gmail.com',
       to: email,
       subject: 'Registration Successful',
-      text: `Dear ${fname},\n\nThank you for registering with us!\n\nRegards,\n WorkDay`
+      text: `Dear ${fname},\n\nThank you for registering with us your password is = Password123@!\n\nRegards,\n WorkDay`
     };
 
     transporter.sendMail(mailOptions, function(error, info){
@@ -349,6 +349,10 @@ router.get("/profile", async (req, res) => {
       role: user.role,
       cid: user.cid,
       mobileno: user.mobileno,
+      city: user.city,
+      gender: user.gender,
+      state: user.state,
+      country: user.country,
     };
 
     res.status(200).json({
